@@ -241,6 +241,50 @@ b.hum{ color:var(--grass); } b.riv{ color:var(--red); }
 @media (prefers-reduced-motion:no-preference){ .dslot.new, .orow.flash, .panel.live.goal{ transition:background .3s, box-shadow .3s; } }
 .feed li.sep{ justify-content:center; color:var(--muted); font-size:13px; font-weight:600; background:var(--bg); }
 .clock span{ white-space:nowrap; } .clock .ctl{ flex:none; } .clock .chipbtn{ white-space:nowrap; padding:0 10px; }
+/* v3: campo + índice */
+.wrap.wide{ max-width:1040px; }
+.agrid{ display:grid; gap:14px; }
+.agrid .main, .agrid .side, .agrid .below{ min-width:0; }
+@media (min-width:760px){
+  .agrid{ grid-template-columns:minmax(0,1fr) 320px; align-items:start; }
+  .agrid .side{ grid-column:2; grid-row:1 / span 2; position:sticky; top:calc(env(safe-area-inset-top,0px) + 52px); }
+  .agrid .main{ grid-column:1; grid-row:1; } .agrid .below{ grid-column:1; grid-row:2; }
+}
+.side{ background:var(--paper); border:1px solid var(--line); border-radius:var(--r); padding:12px; }
+.side h2{ margin:0; }
+.side-h{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+.side-h span{ font-weight:700; }
+.field{ width:100%; max-width:300px; display:block; margin:0 auto; }
+.field rect, .field line, .field .cc{ fill:none; stroke:var(--grass); stroke-width:.8; }
+.field rect:first-child{ fill:color-mix(in srgb,var(--grass) 10%,transparent); }
+.field .pl circle{ fill:var(--grass); stroke:var(--paper); stroke-width:1; }
+.field .pl.crq circle{ fill:var(--gold); }
+.field .pl.chp circle{ stroke:var(--gold); stroke-width:2.2; }
+.field text{ font:700 6.6px "Barlow Condensed",sans-serif; text-anchor:middle; fill:#fff; }
+.field .pl.crq text:first-of-type{ fill:#1d1604; }
+.field text.nt{ font-size:5.6px; fill:var(--ink); font-weight:600; }
+.field text.nt .af{ fill:var(--grass); font-weight:800; }
+.field .empty circle{ fill:var(--paper); stroke:var(--muted); stroke-dasharray:2 1.6; stroke-width:.8; }
+.field .empty text{ fill:var(--muted); font-size:5.2px; }
+.field .empty.hot circle{ stroke:var(--gold); stroke-width:2; stroke-dasharray:none; fill:var(--gold-soft); }
+.idx{ margin-top:10px; }
+.idx-top{ display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:0 10px; }
+.idx-top span{ color:var(--muted); font-weight:600; }
+.idx-top strong{ font-family:"Barlow Condensed",sans-serif; font-size:44px; font-weight:800; line-height:1; grid-row:1 / span 2; grid-column:2; text-align:right; }
+.idx-top em{ font-style:normal; color:var(--muted); font-size:13px; }
+.idx dl{ display:grid; grid-template-columns:1fr auto; gap:3px 8px; margin:8px 0 0; font-size:14px; border-top:1px solid var(--line); padding-top:8px; }
+.idx dt{ color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .idx dd{ margin:0; font-weight:700; text-align:right; }
+.preview{ margin-top:10px; background:var(--gold-soft); border-radius:10px; padding:8px 10px; display:grid; gap:2px; }
+.preview span{ font-size:13px; } .preview strong{ font-family:"Barlow Condensed",sans-serif; font-size:26px; line-height:1; }
+.preview strong em{ font-style:normal; font-size:18px; color:var(--grass); } .preview small{ font-size:13px; color:var(--muted); }
+.idxrow{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); }
+.idxrow b{ font-family:"Barlow Condensed",sans-serif; font-size:20px; }
+.chpb{ background:var(--grass); color:#fff; font-size:13px; font-weight:700; border-radius:20px; padding:1px 9px; }
+.sqgrid{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media (min-width:520px){ .sqgrid{ grid-template-columns:1fr 1fr; align-items:start; } }
+.squad .meters{ grid-template-columns:repeat(3,1fr); margin-top:8px; }
+.rules p{ margin:0 0 8px; max-width:65ch; }
+.rtab{ margin:6px 0 10px; } .rtab td{ vertical-align:top; padding:8px 0; font-size:14px; } .rtab td:first-child{ font-weight:700; width:38%; padding-right:10px; text-align:left!important; } .rtab td:last-child{ text-align:left!important; width:auto; }
 </style>
 </head>
 <body>
@@ -377,19 +421,41 @@ function sealedResolve(state, lot, bids){
 const W_AT={ATA:1,MEI:0.7,LAT:0.3,VOL:0.25,ZAG:0.1}, W_MD={VOL:1,MEI:1,LAT:0.3,ATA:0.3,ZAG:0.1}, W_DF={ZAG:1,LAT:0.8,VOL:0.6,GOL:1.6};
 const wkey = p => (p.slot && p.slot!=="DEF") ? p.slot : p.pos;
 function wavg(list, w, key){ let s=0,t=0; list.forEach(p=>{ const k=w[wkey(p)]||0; s+=k*p[key]; t+=k; }); return t? s/t : 60; }
-function chemistry(team){
-  if(team.hist) return {mult:1.02, grupos:[]};
-  const g={}; team.players.forEach(p=>{ const k=p.sel+" "+p.copa; g[k]=(g[k]||0)+1; });
-  let b=0; const grupos=[]; Object.entries(g).forEach(([k,n])=>{ if(n>1){ b+=(n-1)*0.01; grupos.push([k,n]); } });
-  if(team.coach && g[team.coach.sel+" "+team.coach.copa]>=2) b+=0.01;
-  return {mult:1+Math.min(b,0.05), grupos};
+// ---- afinidade, campeões e técnico ----
+const CONT = {};
+[["Europa",["França","Dinamarca","Espanha","Eslovênia","Turquia","Portugal","Polônia","Alemanha","Irlanda","Suécia","Inglaterra","Itália","Croácia","Bélgica","Rússia","Grécia","Sérvia","Holanda","Suíça","Eslováquia","Sérvia e Montenegro","República Tcheca","Ucrânia","Bósnia","Islândia","País de Gales"]],
+ ["América do Sul",["Uruguai","Paraguai","Brasil","Argentina","Equador","Chile","Colômbia","Peru"]],
+ ["América do Norte e Central",["México","Costa Rica","Estados Unidos","Honduras","Trinidad e Tobago","Panamá","Canadá"]],
+ ["África",["Senegal","África do Sul","Camarões","Nigéria","Tunísia","Argélia","Gana","Costa do Marfim","Angola","Togo","Egito","Marrocos"]],
+ ["Ásia",["China","Coreia do Sul","Arábia Saudita","Japão","Irã","Coreia do Norte","Catar"]],
+ ["Oceania",["Austrália","Nova Zelândia"]]].forEach(([c,l])=>l.forEach(x=>CONT[x]=c));
+const country = sel => sel==="Sérvia e Montenegro" ? "Sérvia" : sel;
+const isChamp = x => !!x && CHAMPS[x.copa]===x.sel;
+function coachPts(c){ if(!c) return 0; return Math.max(0, Math.round((c.ov-70)/5)) + (c.ov>=90?2:0); }
+function affinity(players){
+  return players.map(p=>{
+    const others=players.filter(q=>q!==p);
+    if(others.some(q=>country(q.sel)===country(p.sel))) return {p, pts:3, tipo:"país"};
+    if(others.some(q=>CONT[q.sel]===CONT[p.sel])) return {p, pts:2, tipo:"continente"};
+    return {p, pts:0, tipo:null};
+  });
 }
+function teamIndex(team){
+  const ps=team.players||[];
+  const aff=affinity(ps);
+  const base = ps.length ? ps.reduce((a,p)=>a+p.ov,0)/ps.length : 0;
+  const affAvg = ps.length ? aff.reduce((a,x)=>a+x.pts,0)/ps.length : 0;
+  const champs = team.hist ? 0 : ps.filter(isChamp).length + (isChamp(team.coach)?1:0);
+  const tec = team.hist ? Math.floor(coachPts(team.coach)/2) : coachPts(team.coach);
+  return {base, affAvg, aff, champs, tec, index: ps.length ? base+affAvg+champs+tec : 0};
+}
+function chemistry(team){ const t=teamIndex(team); return t; }
 function ratings(team, style){
   const ps=team.players; const s=STYLE_MOD[style||team.style]||[1,1,1];
-  const c = 1 + ((team.coach?team.coach.ov:70)-75)*0.003;
-  const ch = chemistry(team).mult;
-  const at = wavg(ps,W_AT,"at")*s[0]*c*ch, md = wavg(ps,W_MD,"cr")*s[1]*c*ch, df = wavg(ps,W_DF,"de")*s[2]*c*ch;
-  return {at, md, df, geral:(at+md+df)/3, craques:ps.filter(p=>p.craque).length};
+  const ti=teamIndex(team); const bonus=ti.champs+ti.tec;
+  const adj=ti.aff.map(x=>({...x.p, at:x.p.at+x.pts, cr:x.p.cr+x.pts, de:x.p.de+x.pts}));
+  const at=(wavg(adj,W_AT,"at")+bonus)*s[0], md=(wavg(adj,W_MD,"cr")+bonus)*s[1], df=(wavg(adj,W_DF,"de")+bonus)*s[2];
+  return {at, md, df, geral:(at+md+df)/3, craques:ps.filter(p=>p.craque).length, index:ti.index};
 }
 // seleção histórica: os 7 melhores do XI titular, encaixados no futebol 7
 const PREF = {GOL:["GOL"], DEF:["ZAG","LAT"], VOL:["VOL","MEI","ZAG"], MEI:["MEI","VOL","ATA"], ATA:["ATA","MEI"]};
@@ -506,13 +572,13 @@ function playStage(cup, styleFor){
   cup.stage++;
   return played;
 }
-if(typeof module!=="undefined") module.exports={SLOTS,cat,STYLES,buildDB,newParticipant,needs,slotsLeft,maxBid,canBid,drawLot,openLot,botTick,humanBid,closeLot,minNext,sealedResolve,ratings,histTeam,customTeam,playMatch,buildCup,playStage,standings,fixtures,winnerOf,BOTS,chemistry,allDone,STAGES,penalties};
+if(typeof module!=="undefined") module.exports={teamIndex,coachPts,affinity,CONT,SLOTS,cat,STYLES,buildDB,newParticipant,needs,slotsLeft,maxBid,canBid,drawLot,openLot,botTick,humanBid,closeLot,minNext,sealedResolve,ratings,histTeam,customTeam,playMatch,buildCup,playStage,standings,fixtures,winnerOf,BOTS,chemistry,allDone,STAGES,penalties};
 
 // ===== Interface v2 =====
 const SAVE_KEY = "leilao_copas_v2";
 const ALL_COPAS = [2002,2006,2010,2014,2018,2022];
 let G = null, DB = null, TIMER = null, NEXT = null;
-let SETUP = {mode:"bots", copas:[...ALL_COPAS], budget:100, names:["Jogador 1","Jogador 2"]};
+let SETUP = {mode:"bots", copas:[...ALL_COPAS], budget:100, names:["Jogador 1","Jogador 2"], step:"config"};
 let UI = {showRosters:false, odds:null, sealedView:"handoff", paused:false, fast:false, quitAsk:false, drawn:0, scrollKey:""};
 
 const $ = id => document.getElementById(id);
@@ -526,11 +592,11 @@ function every(ms, fn){ stopTimer(); TIMER=setInterval(fn, ms); }
 
 function render(){
   const app=$("app");
-  if(!G) app.innerHTML = viewSetup();
+  if(!G) app.innerHTML = SETUP.step==="rules" ? viewRules() : viewSetup();
   else if(G.screen==="auction") app.innerHTML = viewAuction();
   else if(G.screen==="squad") app.innerHTML = viewSquad();
   else if(G.screen==="cup") app.innerHTML = viewCup();
-  const key = G ? [G.screen, G.view, G.cup?G.cup.stage:""].join("|") : "setup";
+  const key = G ? [G.screen, G.view, G.cup?G.cup.stage:""].join("|") : "setup"+SETUP.step;
   if(key!==UI.scrollKey){ UI.scrollKey=key; try{ window.scrollTo({top:0}); }catch(e){} }
 }
 function go(){ save(); render(); }
@@ -569,7 +635,38 @@ function viewSetup(){
     <h2>Dinheiro de cada um</h2>
     <div class="seg">${[60,80,100,150].map(b=>`<button class="${SETUP.budget===b?"on":""}" onclick="SETUP.budget=${b};render()">R$ ${b}</button>`).join("")}</div>
     <p class="hint">${({60:"Difícil: um craque e o resto na raça.",80:"Apertado: escolha bem onde gastar.",100:"Equilibrado: dá para brigar pelo título.",150:"Folgado: time de estrelas, se os rivais deixarem."})[SETUP.budget]}</p>
-    <button class="btn big" onclick="startGame()">Começar leilão</button>
+    <button class="btn big" onclick="SETUP.step='rules';render()">Ver regras e começar</button>
+  </section>`;
+}
+function viewRules(){
+  const m=SETUP.mode, B=SETUP.budget;
+  const modeTxt = m==="bots" ? "Leilão ao vivo contra Gastão, Poupança e Artilheiro. Cada lance reinicia a contagem: quem dá mais, dou-lhe uma, dou-lhe duas, vendido. Os times deles também jogam a Copa."
+    : m==="sealed" ? "Cada pessoa vê o jogador e dá um lance escondido, passando o aparelho. Quem der mais leva e paga o próprio lance. Empate vai para sorteio."
+    : "Um jogador por vez, com preço de tabela. Compre ou passe; quem passou não volta mais.";
+  return `<header class="bar-top"><span>Regras do jogo</span><button class="link light" onclick="SETUP.step='config';render()">Voltar</button></header>
+  <section class="wrap rules">
+    <h2 class="first">O objetivo</h2>
+    <p>Montar o melhor time de futebol 7 no leilão e ganhar a Copa contra 32 seleções históricas de ${SETUP.copas.join(", ")}.</p>
+    <h2>Seu time</h2>
+    <p>8 cartas: goleiro, 2 defensores (zagueiro ou lateral), volante, 2 meias, pivô e técnico. O leilão só termina quando todos os times estiverem completos.</p>
+    <h2>O leilão</h2>
+    <p>${modeTxt}</p>
+    <p>Cada um tem ${money(B)}. Você sempre precisa guardar R$ 1 para cada vaga que falta, então o botão de lance respeita esse limite.</p>
+    <h2>Índice do time</h2>
+    <p>É a força do seu time, e é ele que joga a Copa. Soma a média das notas com os bônus:</p>
+    <table class="rtab"><tbody>
+      <tr><td>Afinidade de país</td><td>+3 na nota de cada jogador que tem outro do mesmo país no time (vale entre Copas diferentes: Ronaldo 2002 + Neymar 2014)</td></tr>
+      <tr><td>Afinidade de continente</td><td>+2 na nota de quem não tem par do mesmo país, mas tem do mesmo continente</td></tr>
+      <tr><td>Campeão do mundo</td><td>+1 no índice por carta campeã, somando (3 campeões = +3). O técnico campeão também conta</td></tr>
+      <tr><td>Técnico</td><td>Nota 75: +1, 80: +2, 85: +3. Técnico craque (90 ou mais): +4 da nota e +2 extra, total +6</td></tr>
+    </tbody></table>
+    <p class="hint">As seleções históricas já jogam juntas: todas têm afinidade de país (+3), metade do bônus do técnico e não ganham bônus de campeão.</p>
+    <h2>Estilos de jogo</h2>
+    <p>Antes de cada partida você escolhe o estilo. Pressão alta vence Posse de bola, Posse de bola vence Contra-ataque, Contra-ataque vence Pressão alta. Quem acerta o duelo ganha cerca de 8% a mais de chance de gol.</p>
+    <h2>A Copa</h2>
+    <p>32 times com os campeões das Copas escolhidas sempre presentes. Sorteio ao vivo, 8 grupos de 4, os 2 primeiros passam. No mata-mata tem prorrogação e pênaltis, e craques (nota 90 ou mais) pesam mais nos jogos decisivos.</p>
+    <button class="btn big" onclick="SETUP.step='config';startGame()">Começar leilão</button>
+    <button class="btn ghost big" onclick="SETUP.step='config';render()">Voltar e mudar a configuração</button>
   </section>`;
 }
 function resumeLabel(s){
@@ -594,6 +691,51 @@ function resume(){
 }
 function st(){ return {db:DB, parts:G.parts, sold:G.sold}; }
 function me(){ return G.parts.find(p=>p.human); }
+
+// ---------- CAMPO E ÍNDICE ----------
+const STOP=/^(de|da|do|dos|das|van|der|di|del|la|el|al|le|dos)$/i;
+function initials(n){ const t=n.replace(/[^\p{L}\s'-]/gu,"").split(/[\s-]+/).filter(x=>x.length>1&&!STOP.test(x)); if(t.length>=2) return (t[0][0]+t[t.length-1][0]).toUpperCase(); return (t[0]||n).slice(0,2).toUpperCase(); }
+const fmt = v => v.toFixed(1).replace(".",",");
+const SPOTS=[["ATA",50,17],["MEI",27,40],["MEI",73,40],["VOL",50,62],["DEF",27,85],["DEF",73,85],["GOL",50,107]];
+function teamPitch(p, lot){
+  const aff=affinity(p.roster); const pts=new Map(aff.map(x=>[x.p.id,x.pts]));
+  const byCat={}; p.roster.forEach(x=>{ const c=cat(x.pos); (byCat[c]=byCat[c]||[]).push(x); });
+  const used={}; const target = lot && lot.pos!=="TEC" && canBid(p,lot) ? cat(lot.pos) : null; let marked=false;
+  const nodes=SPOTS.map(([c,x,y])=>{
+    const k=used[c]=(used[c]||0); used[c]++;
+    const pl=(byCat[c]||[])[k];
+    if(pl){ const a=pts.get(pl.id)||0;
+      return `<g class="pl ${pl.craque?"crq":""} ${isChamp(pl)?"chp":""}"><circle cx="${x}" cy="${y}" r="10"/><text x="${x}" y="${y+2.6}">${esc(initials(pl.nome))}</text>
+        <text class="nt" x="${x}" y="${y+17}">${pl.ov+a}${a?`<tspan class="af"> +${a}</tspan>`:""}</text><title>${esc(pl.nome)} (${esc(pl.sel)} ${pl.copa})</title></g>`; }
+    const hot = target===c && !marked; if(hot) marked=true;
+    return `<g class="empty ${hot?"hot":""}"><circle cx="${x}" cy="${y}" r="10"/><text x="${x}" y="${y+2.4}">${c}</text></g>`;
+  }).join("");
+  return `<svg class="field" viewBox="0 0 100 130" role="img" aria-label="Escalação de ${esc(p.name)}">
+    <rect x="2" y="2" width="96" height="124" rx="3"/><line x1="2" y1="64" x2="98" y2="64"/><circle class="cc" cx="50" cy="64" r="12"/><rect x="28" y="106" width="44" height="20"/><rect x="28" y="2" width="44" height="20"/>${nodes}</svg>`;
+}
+function indexPanel(p, lot){
+  const t={players:p.roster.map(x=>({...x,slot:cat(x.pos)})), coach:p.coach};
+  const ti=teamIndex(t); const n=p.roster.length+(p.coach?1:0);
+  let prev="";
+  if(lot && canBid(p,lot)){
+    const t2 = lot.pos==="TEC" ? {players:t.players, coach:lot} : {players:t.players.concat([{...lot,slot:cat(lot.pos)}]), coach:p.coach};
+    const t2i=teamIndex(t2); const d=t2i.index-ti.index;
+    let why=[];
+    if(lot.pos!=="TEC"){ const mine=t2i.aff.find(x=>x.p.id===lot.id); if(mine&&mine.pts===3) why.push("afinidade de país"); else if(mine&&mine.pts===2) why.push("afinidade de continente"); }
+    if(isChamp(lot)) why.push("campeão do mundo");
+    if(lot.pos==="TEC") why.push(`técnico vale +${coachPts(lot)}`);
+    prev = `<div class="preview"><span>Se você levar ${esc(lot.nome)}</span><strong>${fmt(t2i.index)} <em>${d>=0?"+":""}${fmt(d)}</em></strong>${why.length?`<small>${why.join(", ")}</small>`:""}</div>`;
+  }
+  return `<div class="idx">
+    <div class="idx-top"><span>Índice</span><strong>${n?fmt(ti.index):"—"}</strong><em>${n} de 8 cartas</em></div>
+    <dl><dt>Média das notas</dt><dd>${p.roster.length?fmt(ti.base):"—"}</dd>
+      <dt>Afinidade</dt><dd>+${fmt(ti.affAvg)}</dd>
+      <dt>Campeões do mundo</dt><dd>+${ti.champs}</dd>
+      <dt>Técnico${p.coach?`: ${esc(p.coach.nome)}`:""}</dt><dd>+${ti.tec}</dd></dl>
+    ${prev}
+  </div>`;
+}
+function sideTeam(p, lot){ return `<aside class="side"><div class="side-h"><h2>${esc(p.name)}</h2><span>${money(p.budget)}</span></div>${teamPitch(p,lot)}${indexPanel(p,lot)}</aside>`; }
 
 // ---------- LEILÃO ----------
 function nextLot(){
@@ -638,8 +780,8 @@ function lotCard(l){
     <div class="card-top"><span class="copa">${l.copa}</span><span class="sel">${esc(l.sel)}</span></div>
     <div class="card-ov">${l.ov}</div>
     <h3>${esc(l.nome)}</h3>
-    <div class="card-pos">${SLOT_NAME[c]}${c==="DEF"?` <em>(${l.pos==="LAT"?"lateral":"zagueiro"})</em>`:""}${l.craque?`<span class="crq">Craque</span>`:""}</div>
-    ${tec?`<p class="tecnote">Nota do técnico = força da seleção que ele comandou${CHAMPS[l.copa]===l.sel?", com bônus de campeão":""}.</p>`:`<div class="bars">${bars}</div>`}
+    <div class="card-pos">${SLOT_NAME[c]}${c==="DEF"?` <em>(${l.pos==="LAT"?"lateral":"zagueiro"})</em>`:""}${l.craque?`<span class="crq">${tec?"Técnico craque":"Craque"}</span>`:""}${isChamp(l)?`<span class="chpb">Campeão ${l.copa}</span>`:""}</div>
+    ${tec?`<p class="tecnote">Vale <strong>+${coachPts(l)}</strong> no índice${l.ov>=90?" (inclui +2 de técnico craque)":""}${isChamp(l)?", mais +1 por ser campeão":""}.</p>`:`<div class="bars">${bars}</div>`}
     <div class="card-price">Preço de referência <strong>${money(G.fixedPrice||l.preco)}</strong></div>
   </article>`;
 }
@@ -649,7 +791,9 @@ function viewAuction(){
   const action = G.mode==="bots" ? auctionBots() : G.mode==="fixed" ? auctionFixed() : auctionSealed();
   const hide = G.mode==="sealed" && UI.sealedView==="handoff" && !G.result;
   const stuck = G.lotNo>=35 && G.parts.some(p=>p.human&&slotsLeft(p)>0);
-  return topBar(`Jogador <strong>${G.lotNo}</strong> do leilão`)+`<section class="wrap">${controls}${hide?"":lotCard(G.lot)}${action}${rostersPanel()}${stuck?`<p class="hint">Leilão longo demais? <button class="link" onclick="fillMine()">Completar meu time com reforços baratos</button></p>`:""}</section>`;
+  let sideP = G.mode==="sealed" ? (UI.sealedView==="bid"&&!G.result ? G.parts.find(x=>x.name===G.sealed.order[G.sealed.idx]) : null) : me();
+  const side = sideP ? sideTeam(sideP, G.result?null:G.lot) : `<aside class="side"><h2>Índices</h2>${G.parts.map(p=>`<div class="idxrow"><span>${esc(p.name)}</span><b>${fmt(teamIndex({players:p.roster,coach:p.coach}).index)}</b></div>`).join("")}<p class="hint">O campo de cada um aparece na vez dele.</p></aside>`;
+  return topBar(`Jogador <strong>${G.lotNo}</strong> do leilão`)+`<section class="wrap wide"><div class="agrid"><div class="main">${controls}${hide?"":lotCard(G.lot)}${action}</div>${side}<div class="below">${rostersPanel()}${stuck?`<p class="hint">Leilão longo demais? <button class="link" onclick="fillMine()">Completar meu time com reforços baratos</button></p>`:""}</div></div></section>`;
 }
 function whyNot(p,l){
   if(slotsLeft(p)===0) return "Seu time está completo. Agora é torcer contra os rivais.";
@@ -728,15 +872,14 @@ function endAuction(){ stopTimer(); G.parts.forEach(p=>G.styles[p.name]=p.style)
 function teamOfPart(p){ return customTeam(p, G.styles[p.name]); }
 function meter(n,v,main){ return `<div class="meter ${main?"main":""}"><span>${n}</span><strong>${Math.round(v)}</strong><i style="--v:${Math.max(0,Math.min(100,(v-55)/40*100))}%"></i></div>`; }
 function squadBlock(p, open){
-  const t=teamOfPart(p), r=ratings(t), ch=chemistry(t);
-  const rows=[...p.roster].sort((a,b)=>CAT_ORDER.indexOf(cat(a.pos))-CAT_ORDER.indexOf(cat(b.pos))).concat([p.coach]).map(x=>`
-    <li class="${x.craque?"crqrow":""}"><span class="pos">${cat(x.pos)}</span><span class="nm">${esc(x.nome)}<em>${esc(x.sel)} ${x.copa}, pago ${money(x.pago)}</em></span><b>${x.ov}</b></li>`).join("");
-  const body=`<div class="meters">${meter("Ataque",r.at)}${meter("Meio",r.md)}${meter("Defesa",r.df)}${meter("Geral",r.geral,true)}</div>
-    <p class="hint">${ch.grupos.length?`Entrosamento: ${ch.grupos.map(([k,n])=>`${n} de ${esc(k)}`).join(", ")} (+${Math.round((ch.mult-1)*100)}%).`:"Sem entrosamento: nenhum par da mesma seleção."} Sobrou ${money(p.budget)}.</p>
-    <ul class="lineup">${rows}</ul>
+  const t=teamOfPart(p), r=ratings(t), ti=teamIndex(t);
+  const affTxt=ti.aff.filter(x=>x.pts).map(x=>`${esc(x.p.nome)} +${x.pts}`).join(", ");
+  const body=`<div class="sqgrid">${teamPitch(p)}${indexPanel(p)}</div>
+    <p class="hint">${affTxt?`Afinidades: ${affTxt}.`:"Nenhuma afinidade de país ou continente."} Sobrou ${money(p.budget)}.</p>
+    <div class="meters">${meter("Ataque",r.at)}${meter("Meio",r.md)}${meter("Defesa",r.df)}</div>
     ${p.human?`<label class="stylepick">Estilo de jogo<select data-n="${esc(p.name)}" onchange="setStyle(this.dataset.n,this.value)">${STYLES.map(s=>`<option ${G.styles[p.name]===s?"selected":""}>${s}</option>`).join("")}</select></label>`:`<p class="hint">Estilo: ${G.styles[p.name]}.</p>`}`;
-  return p.human ? `<div class="squad"><div class="sq-h"><h2>${esc(p.name)}</h2><span>${Math.round(r.geral)}</span></div>${body}</div>`
-    : `<details class="squad rival" ${open?"open":""}><summary><strong>${esc(p.name)}</strong><span>${Math.round(r.geral)}</span></summary>${body}</details>`;
+  return p.human ? `<div class="squad"><div class="sq-h"><h2>${esc(p.name)}</h2><span>${fmt(ti.index)}</span></div>${body}</div>`
+    : `<details class="squad rival" ${open?"open":""}><summary><strong>${esc(p.name)}</strong><span>${fmt(ti.index)}</span></summary>${body}</details>`;
 }
 function setStyle(n,v){ G.styles[n]=v; UI.odds=null; go(); }
 function viewSquad(){
